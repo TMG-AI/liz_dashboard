@@ -40,16 +40,21 @@ This is **Liz Dashboard** - a media monitoring and alerting system that:
 ## Environment Variables
 
 Required for production:
-- `KV_REST_API_URL` - Upstash Redis URL (NEW naming convention)
-- `KV_REST_API_TOKEN` - Upstash Redis token (NEW naming convention)
-- `RSS_FEEDS` - Semicolon or comma-separated list of RSS feed URLs (legal tech & news sources)
-- `KEYWORDS` - Comma-separated AI/legal keywords to match (optional - accepts all if empty)
-- `ALERT_KEYWORDS_URGENT` - High-priority keywords (optional)
+- `KV2_REST_API_URL` - Upstash Redis URL (KV2 specific to Liz Dashboard)
+- `KV2_REST_API_TOKEN` - Upstash Redis token (KV2 specific to Liz Dashboard)
+
+Entity-specific RSS feeds (Google Alerts or similar):
+- `RSS_FEED_DELTA_AIR_LINES` - RSS feed URL for Delta Air Lines articles
+- `RSS_FEED_GUARDANT_HEALTH` - RSS feed URL for Guardant Health articles
+- `RSS_FEED_ALBEMARLE` - RSS feed URL for Albemarle articles
+- `RSS_FEED_ADELANTO_HEALTHCARE` - RSS feed URL for Adelanto Healthcare articles
+- `RSS_FEED_CARLOS_ZAFARINI` - RSS feed URL for Carlos Zafarini Jr. articles
+- `RSS_FEED_STUBHUB` - RSS feed URL for StubHub articles
+
+Legacy/Optional:
+- `RSS_FEEDS` - Semicolon or comma-separated list of RSS feed URLs (fallback for non-entity feeds)
 - `RESEND_API_KEY` - For email notifications (optional)
 - `GA_WEBHOOK_SECRET` - Google Alerts webhook auth (optional)
-- `NEWSLETTER_WEBHOOK_SECRET` - Newsletter webhook auth (optional)
-- `NEWSLETTER_RSS_FEEDS` - Semicolon or comma-separated list of newsletter RSS feed URLs (optional)
-- `MELTWATER_API_KEY` - Meltwater API authentication key for searchid 27864701 (optional)
 
 ## Development Commands
 

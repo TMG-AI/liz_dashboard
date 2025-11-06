@@ -6,8 +6,8 @@ import { isInternationalArticle, getBlockReason } from "./international_filter.j
 
 // ---- clients ----
 const redis = new Redis({
-  url: process.env.KV1_REST_API_URL,
-  token: process.env.KV1_REST_API_TOKEN
+  url: process.env.KV2_REST_API_URL,
+  token: process.env.KV2_REST_API_TOKEN
 });
 
 // Enable YouTube/media fields & add requestOptions for UA

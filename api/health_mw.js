@@ -1,8 +1,8 @@
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
-  url: process.env.KV1_REST_API_URL,
-  token: process.env.KV1_REST_API_TOKEN,
+  url: process.env.KV2_REST_API_URL,
+  token: process.env.KV2_REST_API_TOKEN,
 });
 
 const ZSET = "mentions:z";
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   try {
     if (req.method !== "GET") { res.status(405).send("Use GET"); return; }
 
-    const env_ok = Boolean(process.env.KV1_REST_API_URL && process.env.KV1_REST_API_TOKEN);
+    const env_ok = Boolean(process.env.KV2_REST_API_URL && process.env.KV2_REST_API_TOKEN);
     const mw_secret_set = Boolean(process.env.MW_WEBHOOK_SECRET);
 
     let zcount = 0;

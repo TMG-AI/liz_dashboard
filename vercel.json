@@ -1,10 +1,7 @@
 {
   "version": 2,
   "crons": [
-    { "path": "/api/collect", "schedule": "0 * * * *" },
-    { "path": "/api/law360_collect", "schedule": "0 * * * *" },
-    { "path": "/api/newsletter_rss_collect", "schedule": "0 * * * *" },
-    { "path": "/api/meltwater_collect", "schedule": "0 13 * * *" }
+    { "path": "/api/collect", "schedule": "0 * * * *" }
   ],
   "headers": [
     {

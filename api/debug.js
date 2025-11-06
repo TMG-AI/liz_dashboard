@@ -3,8 +3,8 @@
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
-  url: process.env.KV1_REST_API_URL,
-  token: process.env.KV1_REST_API_TOKEN,
+  url: process.env.KV2_REST_API_URL,
+  token: process.env.KV2_REST_API_TOKEN,
 });
 
 const ZSET = "mentions:z";
@@ -56,10 +56,10 @@ export default async function handler(req, res) {
       env_check: {
         congress_api_key: !!process.env.CONGRESS_API_KEY,
         rss_feeds: !!process.env.RSS_FEEDS,
-        storage_kv_url: !!process.env.KV1_REST_API_URL,
-        storage_kv_token: !!process.env.KV1_REST_API_TOKEN,
-        old_kv_url_exists: !!process.env.KV1_REST_API_URL,
-        old_kv_token_exists: !!process.env.KV1_REST_API_TOKEN
+        storage_kv_url: !!process.env.KV2_REST_API_URL,
+        storage_kv_token: !!process.env.KV2_REST_API_TOKEN,
+        old_kv_url_exists: !!process.env.KV2_REST_API_URL,
+        old_kv_token_exists: !!process.env.KV2_REST_API_TOKEN
       }
     });
   } catch (e) {
