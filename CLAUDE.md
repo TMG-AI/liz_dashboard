@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the **AI Digest for Lawyers** - a media monitoring and alerting system that:
+This is **Liz Dashboard** - a media monitoring and alerting system that:
 - Collects AI and legal tech news from RSS feeds, Google Alerts, Law360, Meltwater, and newsletters
 - Educates lawyers on effective AI use in legal practice
 - Tracks new case law and regulatory developments related to AI
