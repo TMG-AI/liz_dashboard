@@ -208,6 +208,23 @@ function shouldFilterArticle(origin, title, summary) {
     }
   }
 
+  // StubHub: Exclude articles about how to get/buy tickets
+  if (origin === 'stubhub') {
+    const ticketBuyingKeywords = [
+      'how to get tickets', 'how to buy', 'where to buy tickets',
+      'ticket guide', 'buying guide', 'purchase tickets',
+      'get your tickets', 'buy tickets', 'tickets available',
+      'on sale now', 'tickets on sale', 'cheapest tickets',
+      'best way to get', 'how to find tickets'
+    ];
+
+    const isTicketBuying = ticketBuyingKeywords.some(keyword => text.includes(keyword));
+
+    if (isTicketBuying) {
+      return true; // Filter out ticket-buying guides
+    }
+  }
+
   // All other entities: accept all
   return false;
 }
