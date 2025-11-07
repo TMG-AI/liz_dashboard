@@ -162,6 +162,56 @@ async function sendEmail(m){
   });
 }
 
+// Entity-specific content filters
+function shouldFilterArticle(origin, title, summary) {
+  const text = `${title} ${summary}`.toLowerCase();
+
+  // Delta Air Lines: Exclude airplane incidents and new travel routes
+  if (origin === 'delta_air_lines') {
+    const incidentKeywords = [
+      'incident', 'crash', 'emergency', 'accident', 'diverted', 'grounded',
+      'delayed', 'cancellation', 'mechanical issue', 'safety concern',
+      'investigation', 'turbulence', 'forced landing'
+    ];
+    const routeKeywords = [
+      'new route', 'adds service', 'launches flight', 'new destination',
+      'expands service', 'adds flight', 'inaugural flight', 'direct flight to',
+      'nonstop service', 'new nonstop'
+    ];
+
+    const hasIncident = incidentKeywords.some(keyword => text.includes(keyword));
+    const hasRoute = routeKeywords.some(keyword => text.includes(keyword));
+
+    if (hasIncident || hasRoute) {
+      return true; // Filter out
+    }
+  }
+
+  // Guardant Health: Accept all news
+  if (origin === 'guardant_health') {
+    return false; // Accept all
+  }
+
+  // Albemarle: Only news about Albemarle Corporation
+  if (origin === 'albemarle') {
+    // Must mention corporation/corp/company to be about the business
+    const isCorporation = text.includes('corporation') ||
+                         text.includes('corp') ||
+                         text.includes('company') ||
+                         text.includes('albemarle corp') ||
+                         text.includes('alb') || // Stock ticker
+                         text.includes('lithium') || // Their main business
+                         text.includes('chemical');
+
+    if (!isCorporation) {
+      return true; // Filter out non-corporate Albemarle news
+    }
+  }
+
+  // All other entities: accept all
+  return false;
+}
+
 // ---- handler ----
 export default async function handler(req, res) {
   try {
@@ -214,6 +264,12 @@ export default async function handler(req, res) {
           // Filter out international articles
           if (isInternationalArticle(title, sum, link, source)) {
             console.log(`Skipping international article: "${title}" - ${getBlockReason(title, sum, link, source)}`);
+            continue;
+          }
+
+          // Apply entity-specific filters
+          if (shouldFilterArticle(origin, title, sum)) {
+            console.log(`Skipping filtered article for ${origin}: "${title}"`);
             continue;
           }
 
