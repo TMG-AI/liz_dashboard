@@ -836,7 +836,48 @@
       loading.style.display = 'flex';
       response.style.display = 'none';
 
-      const question = 'Analyze this week\'s articles about AI in legal practice. Focus on: 1) Major trends in AI adoption by law firms and legal departments, 2) New AI tools and their practical applications, 3) Ethical considerations and regulatory developments, 4) Case studies and real-world implementations. Highlight insights that would interest legal professionals and decision-makers.';
+      const question = `Analyze the provided articles and create a professional weekly summary organized by client. For each client, provide a concise overview of news coverage from the past week.
+
+**Client Categories:**
+1. **Delta Air Lines**
+2. **Guardant Health**
+3. **Albemarle**
+4. **Adelanto Healthcare**
+5. **Carlos Zafarini Jr.**
+6. **StubHub**
+
+**Output Format:**
+
+## Weekly Client News Summary
+**Period:** [Date Range]
+
+### Delta Air Lines
+[2-4 sentences summarizing key developments, or "No significant coverage this week"]
+
+### Guardant Health
+[2-4 sentences summarizing key developments, or "No significant coverage this week"]
+
+### Albemarle
+[2-4 sentences summarizing key developments, or "No significant coverage this week"]
+
+### Adelanto Healthcare
+[2-4 sentences summarizing key developments, or "No significant coverage this week"]
+
+### Carlos Zafarini Jr.
+[2-4 sentences summarizing key developments, or "No significant coverage this week"]
+
+### StubHub
+[2-4 sentences summarizing key developments, or "No significant coverage this week"]
+
+---
+
+**Guidelines:**
+- Professional, factual tone
+- Focus on key events, announcements, and business developments
+- Include specific dates when mentioned
+- Highlight trends across multiple articles when relevant
+- 2-4 sentences per client (3 sentences ideal)
+- State "No significant coverage this week" if no articles found`;
 
       try {
         const res = await fetch('/api/chat', {
