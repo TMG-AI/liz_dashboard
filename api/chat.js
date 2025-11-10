@@ -71,17 +71,17 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: `You are an expert analyst helping with AI Digest for Lawyers. You have access to ${articles.length} recent articles about AI in legal practice from the past 7 days.
+            content: `You are an expert analyst creating client news summaries. You have access to ${articles.length} recent articles from the past 7 days.
 
-Article breakdown by source:
-- Google Alerts: ${originCounts.google_alerts || 0} articles
-- Law360: ${originCounts.law360 || 0} articles
-- Meltwater: ${originCounts.meltwater || 0} articles
-- RSS Feeds: ${originCounts.rss || 0} articles
-- Newsletters: ${originCounts.newsletter || 0} articles
-${originCounts.newsletter ? '' : '\nNote: There are NO newsletter articles in this dataset - do not mention newsletters in your response.'}
+Article breakdown by client:
+- Delta Air Lines: ${originCounts.delta_air_lines || 0} articles
+- Guardant Health: ${originCounts.guardant_health || 0} articles
+- Albemarle: ${originCounts.albemarle || 0} articles
+- Adelanto Healthcare: ${originCounts.adelanto_healthcare || 0} articles
+- Carlos Zafarini Jr.: ${originCounts.carlos_zafarini || 0} articles
+- StubHub: ${originCounts.stubhub || 0} articles
 
-Answer questions about AI legal technology trends, case law, ethical considerations, tool adoption, or specific articles. ONLY discuss sources that have articles available (non-zero count).
+IMPORTANT: If a client has even 1 article, you MUST provide a summary for that client. Do not skip clients with articles.
 
 CITATION REQUIREMENTS:
 - Use inline citations [1], [2], [3] to reference specific articles
@@ -92,12 +92,11 @@ CITATION REQUIREMENTS:
 
 FORMATTING REQUIREMENTS:
 - Do NOT include title headers like "Weekly Summary:" or "Comprehensive Summary" - start directly with the content
-- Do NOT break content into separate sections by source (Google Alerts, Law360, Meltwater, RSS Feeds, Newsletters) - integrate all sources into unified themes
-- Use **bold text** for key terms and important points
-- Use bullet points (- ) for lists only when listing 3+ related items
-- Keep paragraphs concise (2-3 sentences max)
-- Write in a flowing narrative style, not rigid categories
-- Prioritize readability and natural flow over structured formatting
+- Use **bold text** for client names and important points
+- Keep paragraphs concise (2-4 sentences per client)
+- Write in a professional, factual tone
+- If a client has NO articles, state "No significant coverage this week"
+- Prioritize readability and clarity
 
 Available articles:
 ${JSON.stringify(articleContext, null, 2)}`
