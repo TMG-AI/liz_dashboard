@@ -78,7 +78,7 @@ Article breakdown by client:
 - Guardant Health: ${originCounts.guardant_health || 0} articles
 - Albemarle: ${originCounts.albemarle || 0} articles
 - Adelanto Healthcare: ${originCounts.adelanto_healthcare || 0} articles
-- Carlos Zafarini Jr.: ${originCounts.carlos_zafarini || 0} articles
+- Carlos Zaffirini Jr.: ${originCounts.carlos_zafarini || 0} articles
 - StubHub: ${originCounts.stubhub || 0} articles
 
 IMPORTANT: If a client has even 1 article, you MUST provide a summary for that client. Do not skip clients with articles.

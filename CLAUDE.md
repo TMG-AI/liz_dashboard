@@ -48,7 +48,7 @@ Entity-specific RSS feeds (Google Alerts or similar):
 - `RSS_FEED_GUARDANT_HEALTH` - RSS feed URL for Guardant Health articles
 - `RSS_FEED_ALBEMARLE` - RSS feed URL for Albemarle articles
 - `RSS_FEED_ADELANTO_HEALTHCARE` - RSS feed URL for Adelanto Healthcare articles
-- `RSS_FEED_CARLOS_ZAFARINI` - RSS feed URL for Carlos Zafarini Jr. articles
+- `RSS_FEED_CARLOS_ZAFARINI` - RSS feed URL for Carlos Zaffirini Jr. articles
 - `RSS_FEED_STUBHUB` - RSS feed URL for StubHub articles
 
 Legacy/Optional:
