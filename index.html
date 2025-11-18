@@ -232,15 +232,11 @@
 
   <!-- Summary Bar (Weekly) -->
   <div class="summary-section">
-    <div class="summary-grid" style="grid-template-columns:repeat(8,1fr)">
+    <div class="summary-grid" style="grid-template-columns:repeat(7,1fr)">
       <div class="summary-item active" data-filter="all" onclick="filterByEntity('all')">
         <div class="summary-label">Total Articles</div>
         <div class="summary-value" id="sb-total">—</div>
         <div style="font-size:10px;color:#999;margin-top:2px">Past Week</div>
-      </div>
-      <div class="summary-item" data-filter="congress" onclick="filterByEntity('congress')">
-        <div class="summary-label">Congress.gov</div>
-        <div class="summary-value" id="sb-congress">—</div>
       </div>
       <div class="summary-item" data-filter="adelanto_healthcare" onclick="filterByEntity('adelanto_healthcare')">
         <div class="summary-label">Adelanto</div>
@@ -1223,7 +1219,6 @@ ${articleText}`;
 
       // Calculate counts by entity for last 7 days
       const by = {
-        congress: 0,
         delta_air_lines: 0,
         guardant_health: 0,
         albemarle: 0,
@@ -1247,7 +1242,6 @@ ${articleText}`;
       const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = fmt(val); };
 
       setText('sb-total',      total);
-      setText('sb-congress',   by.congress || 0);
       setText('sb-delta',      by.delta_air_lines || 0);
       setText('sb-guardant',   by.guardant_health || 0);
       setText('sb-albemarle',  by.albemarle || 0);
