@@ -362,19 +362,36 @@ function shouldFilterArticle(origin, title, summary, source, link) {
     return false; // Accept all
   }
 
-  // Albemarle: Only news about Albemarle Corporation
+  // Albemarle: Only news about Albemarle Corporation (not geographic locations)
   if (origin === 'albemarle') {
-    // Must mention corporation/corp/company to be about the business
+    // Filter geographic false positives FIRST
+    const geographicKeywords = [
+      'albemarle county', 'albemarle, nc', 'albemarle north carolina',
+      'city of albemarle', 'charlottesville', 'albemarle sound',
+      'albemarle road', 'albemarle st', 'albemarle street', 'albemarle ave',
+      'zoning', 'rezoning', 'land use', 'parcel', 'planning board'
+    ];
+
+    const isGeographic = geographicKeywords.some(keyword => text.includes(keyword));
+    if (isGeographic) {
+      console.log(`Filtering Albemarle geographic article: "${title}"`);
+      return true;
+    }
+
+    // Must mention corporation/business indicators
     const isCorporation = text.includes('corporation') ||
-                         text.includes('corp') ||
+                         text.includes('corp.') ||
                          text.includes('company') ||
                          text.includes('albemarle corp') ||
-                         text.includes('alb') || // Stock ticker
-                         text.includes('lithium') || // Their main business
-                         text.includes('chemical');
+                         text.includes(' alb ') || // Stock ticker (with spaces)
+                         text.includes('lithium') ||
+                         text.includes('chemical') ||
+                         text.includes('kings mountain') || // Mine location
+                         (text.includes('charlotte') && text.includes('based')); // HQ
 
     if (!isCorporation) {
-      return true; // Filter out non-corporate Albemarle news
+      console.log(`Filtering Albemarle non-corporate article: "${title}"`);
+      return true;
     }
   }
 
