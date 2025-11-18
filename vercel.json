@@ -1,7 +1,8 @@
 {
   "version": 2,
   "crons": [
-    { "path": "/api/collect", "schedule": "0 * * * *" }
+    { "path": "/api/collect", "schedule": "0 * * * *" },
+    { "path": "/api/congress_collect", "schedule": "0 14 * * *" }
   ],
   "headers": [
     {

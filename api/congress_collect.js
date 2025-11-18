@@ -1,5 +1,5 @@
 // /api/congress_collect.js
-// Collects federal legislation from Congress.gov API with China/Chinese keywords
+// Tracks HR 3838 (119th Congress) with milestone tracking
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
@@ -10,7 +10,14 @@ const redis = new Redis({
 const ZSET = "mentions:z";
 const SEEN_ID = "mentions:seen";
 const SEEN_LINK = "mentions:seen:canon";
-const RETENTION_DAYS = 14; // Keep articles for 14 days
+const RETENTION_DAYS = 14;
+
+// Tracked bill configuration
+const TRACKED_BILL = {
+  congress: "119",
+  type: "hr",
+  number: "3838"
+};
 
 // Helper functions
 function normalizeUrl(u) {
@@ -37,31 +44,72 @@ function toEpoch(d) {
   return Number.isFinite(t) ? Math.floor(t / 1000) : Math.floor(Date.now() / 1000);
 }
 
-function matchesKeywords(text) {
-  if (!text) return false;
-  const lower = text.toLowerCase();
-  return lower.includes("china") || lower.includes("chinese");
-}
+// Detect milestones from actions
+function detectMilestones(actions) {
+  const milestones = {
+    conference_committee: false,
+    conference_report_filed: false,
+    house_vote_scheduled: false,
+    house_vote_completed: false,
+    senate_vote_scheduled: false,
+    senate_vote_completed: false,
+    sent_to_president: false,
+    signed_into_law: false
+  };
 
-// Fetch bills from Congress.gov API
-async function fetchBills(congress = "119", limit = 250) {
-  const apiKey = process.env.CONGRESS_API_KEY;
+  if (!actions || !Array.isArray(actions)) return milestones;
 
-  if (!apiKey) {
-    console.error("CONGRESS_API_KEY not configured");
-    return { bills: [], error: "API key not configured" };
+  for (const action of actions) {
+    const text = (action.text || "").toLowerCase();
+
+    // Conference committee
+    if (text.includes("conference committee") || text.includes("conferees appointed")) {
+      milestones.conference_committee = true;
+    }
+
+    // Conference report filed
+    if (text.includes("conference report filed") || text.includes("conference report submitted")) {
+      milestones.conference_report_filed = true;
+    }
+
+    // House vote scheduled
+    if (text.includes("house") && (text.includes("scheduled") || text.includes("rule provides"))) {
+      milestones.house_vote_scheduled = true;
+    }
+
+    // House vote completed
+    if (text.includes("house") && (text.includes("passed") || text.includes("agreed to") || text.includes("on passage"))) {
+      milestones.house_vote_completed = true;
+    }
+
+    // Senate vote scheduled
+    if (text.includes("senate") && text.includes("scheduled")) {
+      milestones.senate_vote_scheduled = true;
+    }
+
+    // Senate vote completed
+    if (text.includes("senate") && (text.includes("passed") || text.includes("agreed to"))) {
+      milestones.senate_vote_completed = true;
+    }
+
+    // Sent to President
+    if (text.includes("presented to president") || text.includes("sent to president")) {
+      milestones.sent_to_president = true;
+    }
+
+    // Signed into law
+    if (text.includes("signed by president") || text.includes("became public law")) {
+      milestones.signed_into_law = true;
+    }
   }
 
+  return milestones;
+}
+
+// Fetch bill details
+async function fetchBillDetails(congress, type, number, apiKey) {
   try {
-    // Calculate date 7 days ago
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const fromDateTime = sevenDaysAgo.toISOString().split('.')[0] + "Z";
-
-    // Fetch bills with updates in the last 7 days
-    const url = `https://api.congress.gov/v3/bill/${congress}?limit=${limit}&fromDateTime=${fromDateTime}&api_key=${apiKey}&format=json`;
-
-    console.log(`Fetching Congress bills from: ${fromDateTime}`);
+    const url = `https://api.congress.gov/v3/bill/${congress}/${type}/${number}?api_key=${apiKey}&format=json`;
 
     const response = await fetch(url, {
       headers: {
@@ -71,125 +119,146 @@ async function fetchBills(congress = "119", limit = 250) {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Congress API error: ${response.status}`, errorText);
-      return { bills: [], error: `API error: ${response.status}` };
+      console.error(`Bill API error: ${response.status}`);
+      return null;
     }
 
     const data = await response.json();
-    return { bills: data.bills || [], error: null };
+    return data.bill || null;
   } catch (error) {
-    console.error("Error fetching from Congress.gov:", error);
-    return { bills: [], error: error.message };
+    console.error("Error fetching bill details:", error);
+    return null;
+  }
+}
+
+// Fetch amendments
+async function fetchAmendments(congress, type, number, apiKey) {
+  try {
+    const url = `https://api.congress.gov/v3/bill/${congress}/${type}/${number}/amendments?api_key=${apiKey}&format=json`;
+
+    const response = await fetch(url, {
+      headers: {
+        'X-Api-Key': apiKey,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.log(`Amendments API error: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.amendments || [];
+  } catch (error) {
+    console.error("Error fetching amendments:", error);
+    return [];
   }
 }
 
 export default async function handler(req, res) {
   try {
-    let found = 0, stored = 0, errors = [];
+    const apiKey = process.env.CONGRESS_API_KEY;
 
-    const congress = process.env.CONGRESS_NUMBER || "119"; // Default to 119th Congress
-    const { bills, error } = await fetchBills(congress, 250);
-
-    if (error) {
-      errors.push({ source: "Congress.gov", error });
+    if (!apiKey) {
+      return res.status(500).json({
+        ok: false,
+        error: "CONGRESS_API_KEY not configured"
+      });
     }
 
-    console.log(`Fetched ${bills.length} bills from Congress.gov`);
+    const { congress, type, number } = TRACKED_BILL;
+    const billId = `${type.toUpperCase()} ${number}`;
 
-    for (const bill of bills) {
-      try {
-        // Extract bill details
-        const title = bill.title || "";
-        const number = bill.number || "";
-        const type = bill.type || "";
-        const billId = `${type}${number}`;
+    console.log(`Fetching bill: ${billId} (${congress}th Congress)`);
 
-        // Get latest action summary (acts as description)
-        const latestAction = bill.latestAction?.text || "";
+    // Fetch bill details
+    const bill = await fetchBillDetails(congress, type, number, apiKey);
 
-        // Check if title or latest action contains China/Chinese keywords
-        const titleMatch = matchesKeywords(title);
-        const actionMatch = matchesKeywords(latestAction);
-
-        if (!titleMatch && !actionMatch) {
-          continue; // Skip bills that don't match keywords
-        }
-
-        found++;
-
-        // Build bill URL - use congress.gov public URL (not API URL)
-        // Map bill types to correct URL format
-        const typeMap = {
-          's': 'senate-bill',
-          'hr': 'house-bill',
-          'sres': 'senate-resolution',
-          'hres': 'house-resolution',
-          'sjres': 'senate-joint-resolution',
-          'hjres': 'house-joint-resolution',
-          'sconres': 'senate-concurrent-resolution',
-          'hconres': 'house-concurrent-resolution'
-        };
-        const urlType = typeMap[type.toLowerCase()] || `${type.toLowerCase()}-bill`;
-        const billUrl = `https://www.congress.gov/bill/${congress}th-congress/${urlType}/${number}`;
-        const canon = normalizeUrl(billUrl);
-
-        // Check if already seen
-        const addCanon = await redis.sadd(SEEN_LINK, canon);
-        if (addCanon !== 1) continue; // Already stored
-
-        const mid = idFromCanonical(canon);
-        await redis.sadd(SEEN_ID, mid);
-
-        // Get update date (use latestAction date or updateDate)
-        const updateDate = bill.latestAction?.actionDate || bill.updateDate || new Date().toISOString();
-        const ts = toEpoch(updateDate);
-
-        // Build mention object
-        const m = {
-          id: mid,
-          canon,
-          section: "Federal Legislation",
-          title: `${billId}: ${title}`,
-          link: billUrl,
-          source: "Congress.gov",
-          matched: ["china", "chinese", "congress"],
-          summary: latestAction,
-          origin: "congress",
-          published_ts: ts,
-          published: new Date(ts * 1000).toISOString(),
-          // Additional metadata
-          bill_number: billId,
-          congress_number: congress,
-          bill_type: type,
-          introduced_date: bill.introducedDate || null,
-          latest_action_date: bill.latestAction?.actionDate || null
-        };
-
-        // Store in Redis
-        await redis.zadd(ZSET, { score: ts, member: JSON.stringify(m) });
-
-        // Trim articles older than RETENTION_DAYS
-        const cutoffTimestamp = Math.floor(Date.now() / 1000) - (RETENTION_DAYS * 24 * 60 * 60);
-        await redis.zremrangebyscore(ZSET, '-inf', cutoffTimestamp);
-
-        stored++;
-      } catch (err) {
-        console.error(`Error processing bill ${bill.number}:`, err);
-        errors.push({ bill: bill.number, error: err?.message || String(err) });
-      }
+    if (!bill) {
+      return res.status(500).json({
+        ok: false,
+        error: "Failed to fetch bill details"
+      });
     }
 
-    console.log(`Congress collection complete: ${found} matched, ${stored} stored`);
+    // Fetch amendments
+    const amendments = await fetchAmendments(congress, type, number, apiKey);
+    console.log(`Found ${amendments.length} amendments`);
+
+    // Build bill URL
+    const billUrl = `https://www.congress.gov/bill/${congress}th-congress/house-bill/${number}`;
+    const canon = normalizeUrl(billUrl);
+
+    // Detect milestones from actions
+    const milestones = detectMilestones(bill.actions?.actions || []);
+
+    // Get latest action
+    const latestAction = bill.latestAction?.text || "No recent action";
+    const actionDate = bill.latestAction?.actionDate || new Date().toISOString();
+    const ts = toEpoch(actionDate);
+
+    // Build milestone summary
+    const milestoneList = [];
+    if (milestones.conference_committee) milestoneList.push("✓ Conference Committee");
+    if (milestones.conference_report_filed) milestoneList.push("✓ Conference Report Filed");
+    if (milestones.house_vote_completed) milestoneList.push("✓ House Vote");
+    if (milestones.senate_vote_completed) milestoneList.push("✓ Senate Vote");
+    if (milestones.sent_to_president) milestoneList.push("✓ Sent to President");
+    if (milestones.signed_into_law) milestoneList.push("✓ SIGNED INTO LAW");
+
+    const summary = `${bill.title || ""}
+
+Latest Action (${actionDate}): ${latestAction}
+
+Milestones: ${milestoneList.length > 0 ? milestoneList.join(" | ") : "No milestones reached yet"}
+
+Amendments: ${amendments.length}`;
+
+    // Check if already stored (update if exists)
+    const mid = idFromCanonical(canon);
+
+    // Build mention object
+    const m = {
+      id: mid,
+      canon,
+      section: "Congress.gov",
+      title: `${billId}: ${bill.title || ""}`,
+      link: billUrl,
+      source: "Congress.gov",
+      matched: ["congress", "hr3838"],
+      summary: summary,
+      origin: "congress",
+      published_ts: ts,
+      published: new Date(ts * 1000).toISOString(),
+      // Additional metadata
+      bill_number: billId,
+      congress_number: congress,
+      milestones: milestones,
+      amendments_count: amendments.length,
+      latest_action: latestAction,
+      latest_action_date: actionDate
+    };
+
+    // Store in Redis (using zadd which will update if exists)
+    await redis.sadd(SEEN_ID, mid);
+    await redis.sadd(SEEN_LINK, canon);
+    await redis.zadd(ZSET, { score: ts, member: JSON.stringify(m) });
+
+    // Trim old articles
+    const cutoffTimestamp = Math.floor(Date.now() / 1000) - (RETENTION_DAYS * 24 * 60 * 60);
+    await redis.zremrangebyscore(ZSET, '-inf', cutoffTimestamp);
+
+    console.log(`Bill ${billId} updated successfully`);
 
     res.status(200).json({
       ok: true,
-      source: "Congress.gov",
-      congress,
-      total_bills: bills.length,
-      matched: found,
-      stored,
-      errors: errors.length > 0 ? errors : undefined,
+      bill: billId,
+      congress: congress,
+      milestones: milestones,
+      amendments_count: amendments.length,
+      latest_action: latestAction,
+      latest_action_date: actionDate,
       generated_at: new Date().toISOString()
     });
   } catch (e) {
