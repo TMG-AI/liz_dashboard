@@ -1490,8 +1490,9 @@ ${articleText}`;
     mentions.forEach((mention, index) => {
       // Filter by current entity filter
       if (currentFilter !== 'all') {
+        const filterValue = (currentFilter || '').toLowerCase();
         const origin = (mention.origin || '').toLowerCase();
-        if (origin !== currentFilter) return; // Skip if doesn't match filter
+        if (origin !== filterValue) return; // Skip if doesn't match filter
       }
 
       // Check if mention already exists
