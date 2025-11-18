@@ -1486,6 +1486,12 @@ ${articleText}`;
     if (!list) return;
 
     mentions.forEach((mention, index) => {
+      // Filter by current entity filter
+      if (currentFilter !== 'all') {
+        const origin = (mention.origin || '').toLowerCase();
+        if (origin !== currentFilter) return; // Skip if doesn't match filter
+      }
+
       // Check if mention already exists
       const existing = list.querySelector(`[data-mention-id="${mention.id}"]`);
       if (existing) return;
