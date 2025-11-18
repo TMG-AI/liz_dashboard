@@ -225,6 +225,23 @@ async function sendEmail(m){
 function shouldFilterArticle(origin, title, summary) {
   const text = `${title} ${summary}`.toLowerCase();
 
+  // Global filter: Stock price/trading articles for ALL entities
+  const stockPriceKeywords = [
+    'stock price', 'share price', 'stock rises', 'stock falls', 'stock drops',
+    'shares rise', 'shares fall', 'shares drop', 'stock jumps', 'stock climbs',
+    'trading at', 'trades at', 'market cap', 'stock market', 'wall street',
+    'stock analyst', 'price target', 'earnings per share', 'eps', 'stock ticker',
+    'nasdaq', 'nyse', 'dow jones', 'stock rallies', 'stock plunges',
+    'investors', 'shareholders', 'stock performance', 'quarterly earnings',
+    'stock rating', 'buy rating', 'sell rating', 'hold rating'
+  ];
+
+  const isStockArticle = stockPriceKeywords.some(keyword => text.includes(keyword));
+  if (isStockArticle) {
+    console.log(`Filtering stock price article for ${origin}: "${title}"`);
+    return true;
+  }
+
   // Delta Air Lines: Exclude airplane incidents and new travel routes
   if (origin === 'delta_air_lines') {
     const incidentKeywords = [
@@ -235,7 +252,10 @@ function shouldFilterArticle(origin, title, summary) {
     const routeKeywords = [
       'new route', 'adds service', 'launches flight', 'new destination',
       'expands service', 'adds flight', 'inaugural flight', 'direct flight to',
-      'nonstop service', 'new nonstop'
+      'nonstop service', 'new nonstop', 'will fly to', 'service to',
+      'announces route', 'route from', 'route to', 'flights to',
+      'flights from', 'adding flights', 'new flights', 'begins service',
+      'starts service', 'route expansion', 'flight schedule', 'new service to'
     ];
 
     const hasIncident = incidentKeywords.some(keyword => text.includes(keyword));
@@ -300,10 +320,13 @@ function shouldFilterArticle(origin, title, summary) {
       'vs.', 'vs ', ' v ', ' @ ', // Common game notation (Lakers vs Celtics)
       'score', 'final score', 'box score', 'play-by-play',
       'postgame', 'pregame', 'halftime', 'overtime',
-      'wins', 'loses', 'defeats', 'beats',
-      'touchdown', 'home run', 'goal', 'basket',
+      'wins', 'loses', 'defeats', 'beats', 'victory', 'defeated',
+      'touchdown', 'home run', 'goal', 'basket', 'points scored',
       'playoff', 'championship game', 'world series', 'super bowl',
       'nba game', 'nfl game', 'mlb game', 'nhl game', 'mls game',
+      'sports event', 'sporting event', 'game tonight', 'game tomorrow',
+      'season opener', 'season finale', 'game highlights', 'game results',
+      'team wins', 'team loses', 'game score', 'final result',
 
       // Concert/music event indicators
       'concert review', 'concert recap', 'setlist',
@@ -311,11 +334,13 @@ function shouldFilterArticle(origin, title, summary) {
       'takes the stage', 'opening act', 'headliner',
       'tour stops', 'tour date', 'concert venue',
       'live performance', 'live show', 'sold out show',
-      'encore', 'acoustic set',
+      'encore', 'acoustic set', 'concert tonight', 'concert tomorrow',
+      'show tonight', 'show tomorrow', 'music event',
 
       // General event coverage
       'event recap', 'event review', 'event highlights',
-      'what happened at', 'photos from', 'watch highlights'
+      'what happened at', 'photos from', 'watch highlights',
+      'event coverage', 'event results', 'event tonight'
     ];
 
     // StubHub business indicators (keep these articles)
