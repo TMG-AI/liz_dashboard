@@ -499,17 +499,19 @@
         // Store all mentions for filtering
         allMentions = Array.isArray(data) ? data : [];
 
-        // Apply current filter
+        // Apply current filter - ONLY show articles matching selected entity
         let filtered = allMentions;
         if (currentFilter !== 'all') {
+          const filterValue = (currentFilter || '').toLowerCase();
           filtered = filtered.filter(m => {
             const origin = (m.origin || '').toLowerCase();
             // Handle both "newsletter" and "newsletter_rss" when filtering by newsletter
-            if (currentFilter === 'newsletter') {
+            if (filterValue === 'newsletter') {
               return origin === 'newsletter' || origin === 'newsletter_rss';
             }
-            return origin === currentFilter;
+            return origin === filterValue;
           });
+          console.log(`Filtering by ${currentFilter}: ${filtered.length} articles match (out of ${allMentions.length} total)`);
         }
 
         // Apply date range filter
