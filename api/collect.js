@@ -285,7 +285,10 @@ function shouldFilterArticle(origin, title, summary, source, link) {
     'stock up', 'stock down', 'shares up', 'shares down',
     'gains on', 'drops on', 'stock cheap', 'stock expensive',
     'stock performs', 'stock move', 'stock climbs', 'stock falls',
-    'stock outlook', 'stock forecast', 'stock analysis', 'stock valuation'
+    'stock outlook', 'stock forecast', 'stock analysis', 'stock valuation',
+    'stock was', 'stock flop', 'stock soared', 'stock plunged',
+    'stock dipped', 'stock surged', 'stock slumped', 'stock tanked',
+    '(dal) ', '(stub) ', ' dal ', ' stub ' // Stock tickers in title
   ].some(phrase => titleLower.includes(phrase));
 
   // Financial news sources (stock spam sites)
@@ -328,7 +331,8 @@ function shouldFilterArticle(origin, title, summary, source, link) {
     const airportSecurityKeywords = [
       'tsa investigating', 'tsa finds', 'tsa discovered', 'tsa checkpoint',
       'security checkpoint', 'airport security', 'screeners found',
-      'went through security', 'hazardous item', 'weapon found', 'security breach'
+      'went through security', 'hazardous item', 'weapon found', 'security breach',
+      'meat cleaver', 'made it onto a plane', 'made it through security'
     ];
 
     // Generic airline industry news (not Delta-specific)
