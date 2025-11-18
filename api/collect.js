@@ -452,15 +452,17 @@ function shouldFilterArticle(origin, title, summary, source, link) {
     ];
 
     // StubHub business indicators (keep these articles)
+    // NOTE: Do NOT include just "stubhub" - all articles mention it!
     const businessKeywords = [
-      'stubhub', 'fees', 'pricing', 'service charge', 'platform',
-      'marketplace', 'resale', 'secondary market', 'ticket sales',
+      'stubhub fees', 'stubhub pricing', 'service charge', 'platform',
+      'marketplace', 'resale', 'secondary market',
       'ticket platform', 'ticket marketplace', 'dynamic pricing',
       'all-in pricing', 'transparency', 'price guarantee',
       'ticket protection', 'fanprotect', 'customer service',
       'refund policy', 'ticket delivery', 'mobile tickets',
       'stubhub ceo', 'stubhub lawsuit', 'stubhub settlement',
-      'stubhub acquisition', 'stubhub merger', 'stubhub revenue'
+      'stubhub acquisition', 'stubhub merger', 'stubhub revenue',
+      'stubhub investigation', 'stubhub probe', 'watchdog', 'antitrust'
     ];
 
     const isEventFocused = eventFocusedKeywords.some(keyword => text.includes(keyword));
