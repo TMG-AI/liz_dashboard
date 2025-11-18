@@ -222,10 +222,53 @@ async function sendEmail(m){
 }
 
 // Entity-specific content filters
-function shouldFilterArticle(origin, title, summary) {
+function shouldFilterArticle(origin, title, summary, source, link) {
   const text = `${title} ${summary}`.toLowerCase();
+  const titleLower = title.toLowerCase();
 
-  // Global filter: Stock price/trading articles for ALL entities
+  // === UNIVERSAL FILTERS (All entities) ===
+
+  // Filter: Syndicated "Earnings Snapshot" articles (AP wire spam)
+  if (title.includes('Earnings Snapshot') || title.includes('Q3 Earnings Snapshot') ||
+      title.includes('Q4 Earnings Snapshot') || title.includes('Q1 Earnings Snapshot') ||
+      title.includes('Q2 Earnings Snapshot')) {
+    console.log(`Filtering syndicated earnings snapshot: "${title}"`);
+    return true;
+  }
+
+  // Filter: Opinion/Editorial pieces
+  const opinionIndicators = [
+    'opinion:', 'op-ed:', 'commentary:', 'editorial:', 'column:',
+    'guest column', 'my view:', 'viewpoint:', 'perspective:',
+    'letter to', 'letters:', 'i believe', 'in my opinion',
+    'we need to', 'it\'s time to', 'why we should', 'why we must'
+  ];
+  const opinionUrlPatterns = ['/opinion/', '/commentary/', '/op-ed/', '/editorial/', '/columns/'];
+
+  const hasOpinionMarker = opinionIndicators.some(indicator => titleLower.includes(indicator));
+  const isOpinionUrl = link && opinionUrlPatterns.some(pattern => link.toLowerCase().includes(pattern));
+
+  if (hasOpinionMarker || isOpinionUrl) {
+    console.log(`Filtering opinion piece: "${title}"`);
+    return true;
+  }
+
+  // Filter: Shopping/Product listings
+  const shoppingKeywords = [
+    'on sale for', 'buy now and save', 'limited time offer',
+    'shop the collection', 'shop now', 'save up to',
+    'discount code', 'promo code', 'coupon code',
+    'free shipping', 'best deals', 'price drop'
+  ];
+  const hasPriceInTitle = /\$\d+(\.\d{2})?/.test(titleLower);
+  const hasShopping = shoppingKeywords.some(keyword => text.includes(keyword));
+
+  if (hasShopping || hasPriceInTitle) {
+    console.log(`Filtering shopping/product listing: "${title}"`);
+    return true;
+  }
+
+  // Filter: Stock price/trading articles
   const stockPriceKeywords = [
     'stock price', 'share price', 'stock rises', 'stock falls', 'stock drops',
     'shares rise', 'shares fall', 'shares drop', 'stock jumps', 'stock climbs',
@@ -233,36 +276,84 @@ function shouldFilterArticle(origin, title, summary) {
     'stock analyst', 'price target', 'earnings per share', 'eps', 'stock ticker',
     'nasdaq', 'nyse', 'dow jones', 'stock rallies', 'stock plunges',
     'investors', 'shareholders', 'stock performance', 'quarterly earnings',
-    'stock rating', 'buy rating', 'sell rating', 'hold rating'
+    'stock rating', 'buy rating', 'sell rating', 'hold rating',
+    'pre-market', 'after-hours trading', 'stock watch', 'market watch'
   ];
 
-  const isStockArticle = stockPriceKeywords.some(keyword => text.includes(keyword));
-  if (isStockArticle) {
+  // Title-based stock indicators
+  const stockFocusedInTitle = [
+    'stock up', 'stock down', 'shares up', 'shares down',
+    'gains on', 'drops on', 'stock cheap', 'stock expensive',
+    'stock performs', 'stock move', 'stock climbs', 'stock falls',
+    'stock outlook', 'stock forecast', 'stock analysis', 'stock valuation'
+  ].some(phrase => titleLower.includes(phrase));
+
+  // Financial news sources (stock spam sites)
+  const financialSources = [
+    'morningstar', 'seekingalpha', 'marketwatch', 'barrons',
+    'motley fool', 'zacks', 'tipranks', 'gurufocus'
+  ];
+
+  const hasStockKeywords = stockPriceKeywords.some(keyword => text.includes(keyword));
+  const isFinancialSource = source && financialSources.some(src => source.toLowerCase().includes(src));
+
+  if (hasStockKeywords || stockFocusedInTitle || (hasStockKeywords && isFinancialSource)) {
     console.log(`Filtering stock price article for ${origin}: "${title}"`);
     return true;
   }
 
-  // Delta Air Lines: Exclude airplane incidents and new travel routes
+  // === ENTITY-SPECIFIC FILTERS ===
+
+  // Delta Air Lines: Exclude airplane incidents, routes, airport/TSA news, generic airline industry
   if (origin === 'delta_air_lines') {
     const incidentKeywords = [
       'incident', 'crash', 'emergency', 'accident', 'diverted', 'grounded',
       'delayed', 'cancellation', 'mechanical issue', 'safety concern',
-      'investigation', 'turbulence', 'forced landing'
+      'investigation', 'turbulence', 'forced landing', 'engine failure',
+      'medical emergency', 'unruly passenger'
     ];
+
     const routeKeywords = [
       'new route', 'adds service', 'launches flight', 'new destination',
       'expands service', 'adds flight', 'inaugural flight', 'direct flight to',
       'nonstop service', 'new nonstop', 'will fly to', 'service to',
       'announces route', 'route from', 'route to', 'flights to',
       'flights from', 'adding flights', 'new flights', 'begins service',
-      'starts service', 'route expansion', 'flight schedule', 'new service to'
+      'starts service', 'route expansion', 'flight schedule', 'new service to',
+      'increases flights', 'increases service', 'adds daily flight',
+      'cuts service', 'ends operations at', 'exits market', 'suspends flights'
+    ];
+
+    // Airport/TSA security (not Delta business news)
+    const airportSecurityKeywords = [
+      'tsa investigating', 'tsa finds', 'tsa discovered', 'tsa checkpoint',
+      'security checkpoint', 'airport security', 'screeners found',
+      'went through security', 'hazardous item', 'weapon found', 'security breach'
+    ];
+
+    // Generic airline industry news (not Delta-specific)
+    const genericAirlineKeywords = [
+      'airlines will not have to', 'airlines must', 'airlines face',
+      'airline industry', 'aviation industry', 'carriers including',
+      'among airlines', 'airlines like delta', 'delta and other airlines',
+      'major airlines', 'u.s. airlines', 'domestic carriers'
+    ];
+
+    // FAA/regulatory news that's generic (not Delta-specific)
+    const faaGenericKeywords = [
+      'faa ends', 'faa lifts', 'faa issues', 'faa requires',
+      'flight restriction order', 'airspace restriction', 'faa rule'
     ];
 
     const hasIncident = incidentKeywords.some(keyword => text.includes(keyword));
     const hasRoute = routeKeywords.some(keyword => text.includes(keyword));
+    const hasAirportSecurity = airportSecurityKeywords.some(keyword => text.includes(keyword));
+    const hasGenericAirline = genericAirlineKeywords.some(keyword => text.includes(keyword));
+    const hasFAAGeneric = faaGenericKeywords.some(keyword => text.includes(keyword));
 
-    if (hasIncident || hasRoute) {
-      return true; // Filter out
+    if (hasIncident || hasRoute || hasAirportSecurity || hasGenericAirline || hasFAAGeneric) {
+      console.log(`Filtering Delta article: "${title}"`);
+      return true;
     }
   }
 
@@ -425,7 +516,7 @@ export default async function handler(req, res) {
           }
 
           // Apply entity-specific filters
-          if (shouldFilterArticle(origin, title, sum)) {
+          if (shouldFilterArticle(origin, title, sum, source, link)) {
             console.log(`Skipping filtered article for ${origin}: "${title}"`);
             continue;
           }
